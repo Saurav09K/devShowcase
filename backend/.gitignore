@@ -4,4 +4,6 @@ dist/
 
 /src/generated/prisma
 uploads/
+thumbnails/
+temp.js
 *.log
