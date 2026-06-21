@@ -25,7 +25,7 @@ const createProject = async (req, res) => {
   }
 };
 
-// @desc    Get all projects (Feed)
+// @desc    Get all projects 
 // @route   GET /api/projects
 // @access  Public
 const getProjects = async (req, res) => {
