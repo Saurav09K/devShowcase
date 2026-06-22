@@ -6,16 +6,9 @@ ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 const generateThumbnail = (videoPath) => {
   return new Promise((resolve, reject) => {
-
     const ext = path.extname(videoPath);
 
     const fileName = path.basename(videoPath, ext);
-
-    const thumbnailPath = path.join(
-      process.cwd(),
-      "thumbnails",
-      `${fileName}.jpg`
-    );
 
     ffmpeg(videoPath)
       .screenshots({
@@ -25,12 +18,11 @@ const generateThumbnail = (videoPath) => {
         size: "320x240",
       })
       .on("end", () => {
-        resolve(thumbnailPath);
+        resolve(`/thumbnails/${fileName}.jpg`);
       })
       .on("error", (err) => {
         reject(err);
       });
-
   });
 };
 

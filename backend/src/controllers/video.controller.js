@@ -2,6 +2,7 @@ const prisma = require('../lib/prisma');
 const path = require('path');
 const fs = require('fs');
 const generateThumbnail = require("../lib/generateThumbnail")
+const { videoQueue } = require('../lib/queue');
 
 // @desc    Upload a video for a specific project
 // @route   POST /api/videos/upload/:projectId
@@ -37,16 +38,11 @@ const uploadVideo = async (req, res) => {
       },
     });
 
-    const absoluteVideoPath = req.file.path;
-
-    const thumbnailPath = await generateThumbnail(absoluteVideoPath);
-
-    await prisma.video.update({
-      where: { id: video.id },
-        data: {
-        thumbnailPath,
-        },
-    });
+    await videoQueue.add("generate-thumbnail",{
+        videoId: video.id,
+        filePath: req.file.path,
+      },
+    );
 
     res.status(201).json({
       message: 'Video uploaded successfully!',
