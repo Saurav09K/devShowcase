@@ -23,7 +23,8 @@
     "ioredis": "^5.11.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.2.0",
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "uuid": "^14.0.1"
   },
   "devDependencies": {
     "prisma": "^6.19.3"

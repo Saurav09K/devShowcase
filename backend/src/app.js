@@ -14,11 +14,13 @@ app.use(express.json());
 const authRoutes = require('./routes/auth.routes');
 const projectRoutes = require('./routes/project.routes');
 const videoRoutes = require('./routes/video.routes');
+const uploadRoutes = require('./routes/upload.routes');
 
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/videos', videoRoutes);
+app.use('/api/upload',uploadRoutes);
 
 
 
