@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require("uuid");
-const fs = require('fs').promises;
+const fs = require('fs');
 const path = require("path");
 
 // @desc    Initialize a chunked upload session
@@ -11,7 +11,7 @@ const initializeUpload = async (req,res)=>{
     try{
 
     const uploadDir = path.join(process.cwd(),"uploads","temp",uploadId);
-    await fs.mkdir(uploadDir, {
+    await fs.promises.mkdir(uploadDir, {
       recursive: true,
     });
 
@@ -43,15 +43,15 @@ const uploadChunk = async (req, res) => {
 
     //Does this upload session actually exist
     try {
-      await fs.access(tempDirPath);
+      await fs.promises.access(tempDirPath);
     } catch (err) {
       // If the folder doesn't exist
       return res.status(404).json({ error: 'Upload session not found. Please restart upload.' });
     }
 
-    const targetChunkPath = path.join(tempDirPath, chunkIndex);
+    const targetChunkPath = path.join(tempDirPath, `chunk-${chunkIndex}`);
 
-    await fs.rename(chunkFile.path, targetChunkPath);
+    await fs.promises.rename(chunkFile.path, targetChunkPath);
 
     res.status(200).json({ 
       message: `Chunk ${chunkIndex} stored successfully.`,
@@ -63,4 +63,81 @@ const uploadChunk = async (req, res) => {
     res.status(500).json({ error: 'Failed to save chunk.' });
   }
 }
-module.exports = { initializeUpload ,uploadChunk};
+
+const completeUpload = async (req, res) => {
+ try {
+    const { uploadId } = req.body;
+
+    if (!uploadId) {
+      return res.status(400).json({ error: 'Missing uploadId to complete upload.' });
+    }
+
+    const tempDirPath = path.join(process.cwd(), 'uploads', 'temp', uploadId);
+
+    //verifying the  folder exists
+    try {
+      await fs.promises.access(tempDirPath);
+    } catch (err) {
+      return res.status(404).json({ error: 'Upload session not found or already completed.' });
+    }
+
+    const chunks = await fs.readdir(tempDirPath);
+
+    if (chunks.length === 0) {
+        return res.status(400).json({ error: 'No chunks found to merge.' });
+    }
+
+    chunks.sort((a, b) => {
+      const aNum = Number(a.split("-")[1]);
+      const bNum = Number(b.split("-")[1]);
+      return aNum - bNum;
+    });
+
+    const finalDir  = path.join(process.cwd(), 'uploads');
+    await fs.promises.mkdir(finalDir, { recursive: true });
+
+    const finalVideoPath = path.join(finalDir,`${uploadId}.mp4`);
+    const writeStream = fs.createWriteStream(finalVideoPath);
+
+    // 4. Stitch chunks together synchronously
+    for (const chunk of chunks) {
+      const chunkPath = path.join(tempDirPath, chunk);
+      
+      await new Promise((resolve, reject) => {
+        const readStream = fs.createReadStream(chunkPath);
+        
+        readStream.pipe(writeStream, { end: false }); 
+        readStream.on('end', resolve);
+        readStream.on('error', reject);
+      });
+    }
+
+    //properly waiting for the write stream to finish clearing to disk
+    await new Promise((resolve, reject) => {
+      writeStream.on('finish', resolve);
+      writeStream.on('error', reject);
+      writeStream.end();
+    });
+
+    const finalStats = await fs.promises.stat(finalVideoPath);
+
+    // Clean up the temp folder BEFORE sending the response
+    await fs.promises.rm(tempDirPath, {
+      recursive: true,
+      force: true,
+    });
+
+    res.status(201).json({
+      message: 'Upload complete! Video merged successfully.',
+      filename: `${uploadId}.mp4`,
+      size: finalStats.size
+    });
+
+  } catch (error) {
+    console.error('Merge Upload Error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to complete video merge.' });
+    }
+  }
+};
+module.exports = { initializeUpload ,uploadChunk , completeUpload};
