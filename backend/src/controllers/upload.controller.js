@@ -1,6 +1,8 @@
 const { v4: uuidv4 } = require("uuid");
 const fs = require('fs');
 const path = require("path");
+const prisma = require("../lib/prisma");
+const { videoQueue } = require("../lib/queue");
 
 // @desc    Initialize a chunked upload session
 // @route   POST /api/upload/init
@@ -66,10 +68,10 @@ const uploadChunk = async (req, res) => {
 
 const completeUpload = async (req, res) => {
  try {
-    const { uploadId } = req.body;
+    const { uploadId, uploadId, originalName, mimeType, projectId } = req.body;
 
-    if (!uploadId) {
-      return res.status(400).json({ error: 'Missing uploadId to complete upload.' });
+    if (!uploadId || !originalName || !projectId) {
+      return res.status(400).json({ error: 'Missing required fields to complete upload.' });
     }
 
     const tempDirPath = path.join(process.cwd(), 'uploads', 'temp', uploadId);
@@ -122,10 +124,26 @@ const completeUpload = async (req, res) => {
     const finalStats = await fs.promises.stat(finalVideoPath);
 
     // Clean up the temp folder BEFORE sending the response
-    await fs.promises.rm(tempDirPath, {
-      recursive: true,
-      force: true,
+    await fs.promises.rm(tempDirPath, {recursive: true,force: true});
+
+    const finalFilename = `${uploadId}.mp4`;
+
+    const video = await prisma.video.create({
+      data: {
+        fileName: finalFilename,
+        originalName: originalName,
+        mimeType: mimeType || 'video/mp4',
+        fileSize: finalStats.size,
+        filePath: `/uploads/${finalFilename}`,
+        projectId: projectId,
+      },
     });
+
+    await videoQueue.add('generate-thumbnail', {
+      videoId: video.id,
+      filePath: video.filePath
+    });
+
 
     res.status(201).json({
       message: 'Upload complete! Video merged successfully.',
