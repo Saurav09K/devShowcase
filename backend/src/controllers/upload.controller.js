@@ -158,4 +158,41 @@ const completeUpload = async (req, res) => {
     }
   }
 };
-module.exports = { initializeUpload ,uploadChunk , completeUpload};
+
+const checkUploadStatus = async (req, res) => {
+ try {
+    const { uploadId } = req.params;
+
+    if (!uploadId) {
+      return res.status(400).json({ error: 'uploadId is required.' });
+    }
+
+    const tempDirPath = path.join(process.cwd(), 'uploads', 'temp', uploadId);
+
+    try {
+      await fs.promises.access(tempDirPath);
+    } catch (err) {
+      return res.status(200).json({ 
+        message: 'No active session found.',
+        uploadedChunks: [] 
+      });
+    }
+
+    const chunkFiles = await fs.promises.readdir(tempDirPath);
+    
+    const uploadedChunks = chunkFiles
+      .filter(file => file.startsWith("chunk-"))
+      .map((file) => Number(file.split("-")[1]))
+      .sort((a, b) => a - b);
+
+    res.status(200).json({
+      message: 'Upload status retrieved successfully.',
+      uploadedChunks
+    });
+
+  } catch (error) {
+    console.error('Check Upload Status Error:', error);
+    res.status(500).json({ error: 'Failed to retrieve upload status.' });
+  }
+};
+module.exports = { initializeUpload ,uploadChunk , completeUpload, checkUploadStatus};
