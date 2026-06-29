@@ -68,7 +68,7 @@ const uploadChunk = async (req, res) => {
 
 const completeUpload = async (req, res) => {
  try {
-    const { uploadId, uploadId, originalName, mimeType, projectId } = req.body;
+    const { uploadId,originalName, mimeType, projectId } = req.body;
 
     if (!uploadId || !originalName || !projectId) {
       return res.status(400).json({ error: 'Missing required fields to complete upload.' });
@@ -83,7 +83,7 @@ const completeUpload = async (req, res) => {
       return res.status(404).json({ error: 'Upload session not found or already completed.' });
     }
 
-    const chunks = await fs.readdir(tempDirPath);
+    const chunks = await fs.promises.readdir(tempDirPath);
 
     if (chunks.length === 0) {
         return res.status(400).json({ error: 'No chunks found to merge.' });
@@ -128,8 +128,21 @@ const completeUpload = async (req, res) => {
 
     const finalFilename = `${uploadId}.mp4`;
 
-    const video = await prisma.video.create({
-      data: {
+    //Save to PostgreSQL using UPSERT (Update if exists, Create if new)
+    const video = await prisma.video.upsert({
+      where: { 
+        projectId: projectId 
+      },
+      update: {
+        // If a video already exists for this project, overwrite it with the new file
+        fileName: finalFilename,
+        originalName: originalName,
+        mimeType: mimeType || 'video/mp4',
+        fileSize: finalStats.size,
+        filePath: `/uploads/${finalFilename}`,
+      },
+      create: {
+        // If no video exists for this project yet, create it normally
         fileName: finalFilename,
         originalName: originalName,
         mimeType: mimeType || 'video/mp4',

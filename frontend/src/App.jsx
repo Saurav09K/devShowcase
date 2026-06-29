@@ -1,4 +1,5 @@
 import React from 'react';
+import ChunkUploader from './components/ChunkUploader'
 
 function App() {
   return (
@@ -7,7 +8,8 @@ function App() {
       <p className="text-slate-400 mb-8">Distributed Upload System</p>
       
       <div className="w-full max-w-2xl bg-slate-800 rounded-lg shadow-xl border border-slate-700 p-6">
-        <p className="text-center text-slate-500">Uploader mounting...</p>
+        {/* Render it here */}
+        <ChunkUploader />
       </div>
     </div>
   );
