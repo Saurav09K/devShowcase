@@ -154,7 +154,8 @@ const completeUpload = async (req, res) => {
 
     await videoQueue.add('generate-thumbnail', {
       videoId: video.id,
-      filePath: video.filePath
+      filePath: video.filePath,
+      fileName: finalFilename
     });
 
 
