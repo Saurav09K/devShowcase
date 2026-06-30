@@ -5,6 +5,7 @@ require('dotenv').config();
 const path = require('path');
 
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/thumbnails', express.static(path.join(__dirname, '../thumbnails')));
 
 // Middleware
 app.use(cors());
