@@ -126,6 +126,35 @@ const completeUpload = async (req, res) => {
     // Clean up the temp folder BEFORE sending the response
     await fs.promises.rm(tempDirPath, {recursive: true,force: true});
 
+    const existingVideo = await prisma.video.findUnique({
+      where: { projectId: projectId }
+    });
+
+    if (existingVideo) {
+      console.log(`Overwrite detected. Cleaning up old files for project: ${projectId}`);
+      
+      if (existingVideo.filePath) {
+        const oldVideoPath = path.join(process.cwd(), 'uploads', existingVideo.fileName);
+        try {
+          await fs.promises.unlink(oldVideoPath);
+          console.log(`Deleted old video: ${existingVideo.fileName}`);
+        } catch (err) {
+          console.warn(`Could not delete old video (maybe already gone): ${err.message}`);
+        }
+      }
+
+      if (existingVideo.thumbnailPath) {
+        const thumbName = path.basename(existingVideo.thumbnailPath);
+        const oldThumbPath = path.join(process.cwd(), 'uploads', thumbName);
+        try {
+          await fs.promises.unlink(oldThumbPath);
+          console.log(`Deleted old thumbnail: ${thumbName}`);
+        } catch (err) {
+          console.warn(`Could not delete old thumbnail: ${err.message}`);
+        }
+      }
+    }
+
     const finalFilename = `${uploadId}.mp4`;
 
     //Save to PostgreSQL using UPSERT (Update if exists, Create if new)
