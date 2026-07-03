@@ -59,4 +59,12 @@ const mergeChunks = async (uploadId, totalChunks, finalFilePath) => {
   return true;
 };
 
-module.exports = { saveChunk, mergeChunks };
+const getFinalVideoPath = async (filename) => {
+  const finalDir = path.join(process.cwd(), 'uploads');
+  
+  await fs.mkdir(finalDir, { recursive: true });
+  
+  return path.join(finalDir, filename);
+};
+
+module.exports = { saveChunk, mergeChunks, getFinalVideoPath };
