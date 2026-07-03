@@ -55,7 +55,9 @@ const uploadChunk = async (req, res) => {
     res.status(500).json({ error: 'Failed to save chunk.' });
   }
 }
-
+// @desc    Complete the upload and merge all chunks
+// @route   POST /api/upload/complete
+// @access  Private
 const completeUpload = async (req, res) => {
  try {
     const { uploadId,originalName, mimeType, projectId, totalChunks } = req.body;
@@ -149,7 +151,9 @@ const completeUpload = async (req, res) => {
     }
   }
 };
-
+// @desc    Check the status of an ongoing upload
+// @route   GET /api/upload/status/:uploadId
+// @access  Private
 const checkUploadStatus = async (req, res) => {
  try {
     const { uploadId } = req.params;
@@ -166,7 +170,7 @@ const checkUploadStatus = async (req, res) => {
         uploadedChunks: [] 
       });
     }
-    
+
     res.status(200).json({
       message: 'Upload status retrieved successfully.',
       uploadedChunks
