@@ -64,13 +64,15 @@ const completeUpload = async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields to complete upload.' });
     }
 
-   const finalDir = path.join(process.cwd(), 'uploads');
-    await fs.promises.mkdir(finalDir, { recursive: true });
-
     const finalFilename = `${uploadId}.mp4`;
-    const finalVideoPath = path.join(finalDir, finalFilename);
-
-    await storageService.mergeChunks(uploadId, totalChunks, finalVideoPath);
+    
+    const finalVideoPath = await storageService.getFinalVideoPath(finalFilename);
+    
+    await storageService.mergeChunks(
+      uploadId, 
+      totalChunks, 
+      finalVideoPath
+    );
 
     const finalStats = await fs.promises.stat(finalVideoPath);
 
