@@ -65,7 +65,7 @@ const completeUpload = async (req, res) => {
     }
 
     const finalFilename = `${uploadId}.mp4`;
-    
+
     const finalVideoPath = await storageService.getFinalVideoPath(finalFilename);
     
     await storageService.mergeChunks(
@@ -158,24 +158,15 @@ const checkUploadStatus = async (req, res) => {
       return res.status(400).json({ error: 'uploadId is required.' });
     }
 
-    const tempDirPath = path.join(process.cwd(), 'uploads', 'temp', uploadId);
+    const uploadedChunks = await storageService.getUploadedChunks(uploadId);
 
-    try {
-      await fs.promises.access(tempDirPath);
-    } catch (err) {
+    if (uploadedChunks.length === 0) {
       return res.status(200).json({ 
-        message: 'No active session found.',
+        message: 'No active session found or no chunks uploaded yet.',
         uploadedChunks: [] 
       });
     }
-
-    const chunkFiles = await fs.promises.readdir(tempDirPath);
     
-    const uploadedChunks = chunkFiles
-      .filter(file => file.startsWith("chunk-"))
-      .map((file) => Number(file.split("-")[1]))
-      .sort((a, b) => a - b);
-
     res.status(200).json({
       message: 'Upload status retrieved successfully.',
       uploadedChunks
