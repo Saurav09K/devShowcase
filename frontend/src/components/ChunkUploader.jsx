@@ -115,7 +115,8 @@ const ChunkUploader = () => {
           uploadId: currentUploadId,
           originalName: file.name,
           mimeType: file.type,
-          projectId: selectedProjectId
+          projectId: selectedProjectId,
+          totalChunks: totalChunks
         });
 
         setStatus('complete');

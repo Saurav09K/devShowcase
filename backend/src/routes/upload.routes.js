@@ -8,8 +8,12 @@ const { protect } = require('../middlewares/auth.middleware');
 const chunkUpload = multer({ dest: 'uploads/temp_raw/' });
 
 router.post('/init',initializeUpload);
-router.post('/chunk',protect,chunkUpload.single('chunk'),uploadChunk);
+router.post('/chunk',chunkUpload.single('chunk'),uploadChunk);
 router.post('/complete',completeUpload);
-router.get('/status/:uploadId', protect, checkUploadStatus);
+router.get('/status/:uploadId', checkUploadStatus);
 
 module.exports = router;
+// router.post('/init',initializeUpload);
+// router.post('/chunk',protect,chunkUpload.single('chunk'),uploadChunk);
+// router.post('/complete',completeUpload);
+// router.get('/status/:uploadId', protect, checkUploadStatus);
