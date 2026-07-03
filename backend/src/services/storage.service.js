@@ -46,7 +46,13 @@ const mergeChunks = async (uploadId, totalChunks, finalFilePath) => {
     await fs.promises.unlink(chunkPath);
   }
 
-  writeStream.end();
+  await new Promise((resolve, reject) => {
+    writeStream.on("finish", resolve);
+    writeStream.on("error", reject);
+
+    writeStream.end();
+  });
+
   console.log(`[Merger] Successfully stitched ${totalChunks} chunks into final video!`);
 
   for (const node of STORAGE_NODES) {
@@ -67,4 +73,28 @@ const getFinalVideoPath = async (filename) => {
   return path.join(finalDir, filename);
 };
 
-module.exports = { saveChunk, mergeChunks, getFinalVideoPath };
+const getUploadedChunks = async (uploadId) => {
+  const uploadedChunks = [];
+
+  for (const node of STORAGE_NODES) {
+    const nodeDir = path.join(process.cwd(), 'storage',node, uploadId);
+    
+    try {
+      const files = await fs.readdir(nodeDir);
+      
+      for (const file of files) {
+        if (file.startsWith("chunk-")) {
+          const index = Number(file.split("-")[1]);
+          uploadedChunks.push(index);
+        }
+      }
+    } catch (err) {
+      // If the folder doesn't exist on this node, it just means 
+      // no chunks have been routed here yet. ignore it.
+    }
+  }
+
+  return uploadedChunks.sort((a, b) => a - b);
+};
+
+module.exports = { saveChunk, mergeChunks, getFinalVideoPath, getUploadedChunks };
