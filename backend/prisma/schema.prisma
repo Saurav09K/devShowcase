@@ -48,3 +48,27 @@ model Video {
   
   createdAt     DateTime @default(now())
 }
+
+model UploadSession {
+  id          String   @id @default(uuid())
+  uploadId    String   @unique
+  projectId   String
+  totalChunks Int
+  chunks      Chunk[]
+  createdAt   DateTime @default(now())
+}
+
+model Chunk {
+  id              String   @id @default(uuid())
+  chunkIndex      Int
+  nodeId          String
+  chunkPath       String  
+  
+  uploadSessionId String
+  uploadSession   UploadSession @relation(fields: [uploadSessionId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+
+ 
+  @@unique([uploadSessionId, chunkIndex])
+}
