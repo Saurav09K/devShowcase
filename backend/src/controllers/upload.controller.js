@@ -32,7 +32,7 @@ const initializeUpload = async (req,res)=>{
 // @access  Private
 const uploadChunk = async (req, res) => {
   try {
-    const { uploadId, chunkIndex } = req.body;
+    const { uploadId, chunkIndex, projectId, totalChunks } = req.body;
     const chunkFile = req.file;
 
     if (!uploadId || chunkIndex===undefined || !chunkFile) {
@@ -42,7 +42,9 @@ const uploadChunk = async (req, res) => {
     const result = await storageService.saveChunk(
       uploadId,
       parseInt(chunkIndex, 10),
-      chunkFile.path
+      chunkFile.path,
+      projectId,
+      parseInt(totalChunks, 10)
     )
 
     res.status(200).json({ 
@@ -72,7 +74,6 @@ const completeUpload = async (req, res) => {
     
     await storageService.mergeChunks(
       uploadId, 
-      totalChunks, 
       finalVideoPath
     );
 

@@ -1,10 +1,12 @@
 const fs = require('fs');
 const path = require('path');
+const { PrismaClient } = require('@prisma/client');
 
+const prisma = new PrismaClient();
 const STORAGE_NODES = ['node-a', 'node-b', 'node-c'];
 
-// (Used in POST /chunk)
-const saveChunk = async (uploadId, chunkIndex, tempFilePath) => {
+const saveChunk = async (uploadId, chunkIndex, tempFilePath, projectId, totalChunks) => {
+
   const nodeIndex = chunkIndex % STORAGE_NODES.length;
   const targetNode = STORAGE_NODES[nodeIndex];
 
@@ -14,26 +16,67 @@ const saveChunk = async (uploadId, chunkIndex, tempFilePath) => {
   await fs.promises.mkdir(nodeDirPath, { recursive: true });
   await fs.promises.rename(tempFilePath, finalChunkPath);
 
-  console.log(`[Router] Sent Chunk ${chunkIndex} to ${targetNode}`);
+ 
+  const session = await prisma.uploadSession.upsert({
+    where: { uploadId: uploadId },
+    update: {}, // Do nothing if it already exists
+    create: {
+      uploadId: uploadId,
+      projectId: projectId,
+      totalChunks: totalChunks
+    }
+  });
+
+  
+  await prisma.chunk.upsert({
+    where: {
+      uploadSessionId_chunkIndex: {
+        uploadSessionId: session.id,
+        chunkIndex: chunkIndex
+      }
+    },
+    update: {
+      nodeId: targetNode,
+      chunkPath: finalChunkPath 
+    },
+    create: {
+      chunkIndex: chunkIndex,
+      nodeId: targetNode,
+      chunkPath: finalChunkPath,
+      uploadSessionId: session.id
+    }
+  });
+
+  console.log(`[Router] Saved Chunk ${chunkIndex} to ${targetNode} and Ledger`);
   return { node: targetNode, chunkPath: finalChunkPath };
 };
 
-// (Used in POST /complete)
-const mergeChunks = async (uploadId, totalChunks, finalFilePath) => {
-  console.log(`[Merger] Starting distributed merge for ${uploadId}...`);
+const mergeChunks = async (uploadId, finalFilePath) => {
+  console.log(`[Merger] Reading Ledger for upload ${uploadId}...`);
   
+  const session = await prisma.uploadSession.findUnique({
+    where: { uploadId: uploadId },
+    include: {
+      chunks: {
+        orderBy: { chunkIndex: 'asc' } 
+      }
+    }
+  });
+
+  if (!session) throw new Error(`CRITICAL: Upload session ${uploadId} not found.`);
+  if (session.chunks.length !== session.totalChunks) {
+    throw new Error(`CRITICAL: Expected ${session.totalChunks} chunks, DB only has ${session.chunks.length}.`);
+  }
+
   const writeStream = fs.createWriteStream(finalFilePath);
 
-  for (let i = 0; i < totalChunks; i++) {
-    const nodeIndex = i % STORAGE_NODES.length;
-    const targetNode = STORAGE_NODES[nodeIndex];
-    
-    const chunkPath = path.join(process.cwd(), 'storage', targetNode, uploadId, i.toString());
+  for (const chunk of session.chunks) {
+    const chunkPath = chunk.chunkPath; 
 
     try {
       await fs.promises.access(chunkPath);
     } catch (err) {
-      throw new Error(`CRITICAL: Missing chunk ${i} on ${targetNode}`);
+      throw new Error(`CRITICAL: DB says chunk ${chunk.chunkIndex} is at ${chunkPath}, but file is missing!`);
     }
 
     await new Promise((resolve, reject) => {
@@ -46,55 +89,53 @@ const mergeChunks = async (uploadId, totalChunks, finalFilePath) => {
     await fs.promises.unlink(chunkPath);
   }
 
-  await new Promise((resolve, reject) => {
-    writeStream.on("finish", resolve);
-    writeStream.on("error", reject);
+  writeStream.end();
+  console.log(`[Merger] Stitched ${session.totalChunks} chunks perfectly!`);
 
-    writeStream.end();
+ 
+  await prisma.uploadSession.delete({
+    where: { id: session.id }
   });
-
-  console.log(`[Merger] Successfully stitched ${totalChunks} chunks into final video!`);
 
   for (const node of STORAGE_NODES) {
     const nodeDirPath = path.join(process.cwd(), 'storage', node, uploadId);
-    try {
-      await fs.promises.rm(nodeDirPath, { recursive: true, force: true });
-    } catch(e) { /* Ignore if empty */ }
+    try { await fs.promises.rm(nodeDirPath, { recursive: true, force: true }); } catch(e) {}
   }
 
   return true;
 };
 
+module.exports = { saveChunk, mergeChunks };
+
 const getFinalVideoPath = async (filename) => {
   const finalDir = path.join(process.cwd(), 'uploads');
   
-  await fs.mkdir(finalDir, { recursive: true });
+  await fs.promises.mkdir(finalDir, { recursive: true });
   
   return path.join(finalDir, filename);
 };
 
-const getUploadedChunks = async (uploadId) => {
-  const uploadedChunks = [];
 
-  for (const node of STORAGE_NODES) {
-    const nodeDir = path.join(process.cwd(), 'storage',node, uploadId);
-    
-    try {
-      const files = await fs.readdir(nodeDir);
-      
-      for (const file of files) {
-        if (file.startsWith("chunk-")) {
-          const index = Number(file.split("-")[1]);
-          uploadedChunks.push(index);
-        }
+const getUploadedChunks = async (uploadId) => {
+  console.log(`[Ledger] Checking uploaded chunks for ${uploadId}...`);
+
+  const session = await prisma.uploadSession.findUnique({
+    where: { uploadId: uploadId },
+    include: {
+      chunks: {
+        select: { chunkIndex: true },
+        orderBy: { chunkIndex: 'asc' } 
       }
-    } catch (err) {
-      // If the folder doesn't exist on this node, it just means 
-      // no chunks have been routed here yet. ignore it.
     }
+  });
+
+  if (!session) {
+    return [];
   }
 
-  return uploadedChunks.sort((a, b) => a - b);
+  const uploadedChunks = session.chunks.map(chunk => chunk.chunkIndex);
+
+  return uploadedChunks;
 };
 
 module.exports = { saveChunk, mergeChunks, getFinalVideoPath, getUploadedChunks };
