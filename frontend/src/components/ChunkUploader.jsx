@@ -92,6 +92,9 @@ const ChunkUploader = () => {
         formData.append('uploadId', currentUploadId);
         formData.append('chunkIndex', index);
         formData.append('chunk', chunkBlob);
+        formData.append('projectId', selectedProjectId);
+        formData.append('totalChunks', totalChunks);
+        
 
         await axios.post('http://localhost:5000/api/upload/chunk', formData, {
           signal: abortControllerRef.current.signal, // Allows us to cancel the HTTP request mid-flight
