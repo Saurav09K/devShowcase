@@ -68,6 +68,14 @@ const mergeChunks = async (uploadId, finalFilePath) => {
     throw new Error(`CRITICAL: Expected ${session.totalChunks} chunks, DB only has ${session.chunks.length}.`);
   }
 
+  for (let i = 0; i < session.totalChunks; i++) {
+    if (session.chunks[i].chunkIndex !== i) {
+        throw new Error(
+            `Missing chunk ${i}`
+        );
+    }
+  }
+
   const writeStream = fs.createWriteStream(finalFilePath);
 
   for (const chunk of session.chunks) {
@@ -89,7 +97,15 @@ const mergeChunks = async (uploadId, finalFilePath) => {
     await fs.promises.unlink(chunkPath);
   }
 
-  writeStream.end();
+  await new Promise((resolve, reject) => {
+
+    writeStream.on("finish", resolve);
+
+    writeStream.on("error", reject);
+
+    writeStream.end();
+
+  });
   console.log(`[Merger] Stitched ${session.totalChunks} chunks perfectly!`);
 
  
@@ -104,8 +120,6 @@ const mergeChunks = async (uploadId, finalFilePath) => {
 
   return true;
 };
-
-module.exports = { saveChunk, mergeChunks };
 
 const getFinalVideoPath = async (filename) => {
   const finalDir = path.join(process.cwd(), 'uploads');
