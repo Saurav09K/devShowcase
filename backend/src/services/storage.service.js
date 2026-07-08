@@ -1,22 +1,46 @@
 const fs = require('fs');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
+const axios = require('axios');
+const FormData = require('form-data');
 
 const prisma = new PrismaClient();
 const STORAGE_NODES = ['node-a', 'node-b', 'node-c'];
 
+const STORAGE_NODES = [
+  { id: 'node-a', url: 'http://localhost:5001' },
+  { id: 'node-b', url: 'http://localhost:5002' },
+  { id: 'node-c', url: 'http://localhost:5003' }
+];
+
+const selectStorageNode = (chunkIndex) => {
+  return STORAGE_NODES[chunkIndex % STORAGE_NODES.length];
+};
+
 const saveChunk = async (uploadId, chunkIndex, tempFilePath, projectId, totalChunks) => {
 
-  const nodeIndex = chunkIndex % STORAGE_NODES.length;
-  const targetNode = STORAGE_NODES[nodeIndex];
+  const targetNode = selectStorageNode(chunkIndex);
 
-  const nodeDirPath = path.join(process.cwd(), 'storage', targetNode, uploadId);
-  const finalChunkPath = path.join(nodeDirPath, chunkIndex.toString());
+  const form = new FormData();
+  form.append('uploadId', uploadId);
+  form.append('chunkIndex', chunkIndex);
+  form.append('chunk', fs.createReadStream(tempFilePath));
 
-  await fs.promises.mkdir(nodeDirPath, { recursive: true });
-  await fs.promises.rename(tempFilePath, finalChunkPath);
+  const targetUrl = `${targetNode.url}/chunks`;
+  console.log(`Forwarding Chunk ${chunkIndex} over HTTP to ${targetNode.id}...`);
 
- 
+  try {
+    const response = await axios.post(targetUrl, form, {
+      headers: { ...form.getHeaders() }
+    });
+    nodeResponse = response.data; // { success: true, node: 'node-a', savedPath: '...' }
+  } catch (error) {
+    throw new Error(`CRITICAL: Failed to send chunk over network to ${targetNode.id }.`);
+  }
+
+  await fs.promises.unlink(tempFilePath);
+
+  
   const session = await prisma.uploadSession.upsert({
     where: { uploadId: uploadId },
     update: {}, // Do nothing if it already exists
@@ -36,19 +60,17 @@ const saveChunk = async (uploadId, chunkIndex, tempFilePath, projectId, totalChu
       }
     },
     update: {
-      nodeId: targetNode,
-      chunkPath: finalChunkPath 
+      nodeId: targetNode.id,
     },
     create: {
       chunkIndex: chunkIndex,
-      nodeId: targetNode,
-      chunkPath: finalChunkPath,
+      nodeId: targetNode.id,
       uploadSessionId: session.id
     }
   });
 
-  console.log(`[Router] Saved Chunk ${chunkIndex} to ${targetNode} and Ledger`);
-  return { node: targetNode, chunkPath: finalChunkPath };
+  console.log(`[Router] Saved Chunk ${chunkIndex} to ${targetNode.id} and Ledger`);
+  return { node: targetNode.id };
 };
 
 const mergeChunks = async (uploadId, finalFilePath) => {
@@ -114,7 +136,7 @@ const mergeChunks = async (uploadId, finalFilePath) => {
   });
 
   for (const node of STORAGE_NODES) {
-    const nodeDirPath = path.join(process.cwd(), 'storage', node, uploadId);
+    const nodeDirPath = path.join(process.cwd(), 'storage', node.id, uploadId);
     try { await fs.promises.rm(nodeDirPath, { recursive: true, force: true }); } catch(e) {}
   }
 

@@ -62,7 +62,6 @@ model Chunk {
   id              String   @id @default(uuid())
   chunkIndex      Int
   nodeId          String
-  chunkPath       String  
   
   uploadSessionId String
   uploadSession   UploadSession @relation(fields: [uploadSessionId], references: [id], onDelete: Cascade)
