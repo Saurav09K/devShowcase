@@ -1,5 +1,7 @@
 const storageService = require('../services/storage.services');
 const config = require('../config/storage');
+const path = require('path');
+const fs = require('fs');
 
 const uploadChunk = async (req, res) => {
   try {
@@ -23,4 +25,20 @@ const uploadChunk = async (req, res) => {
   }
 };
 
-module.exports = { uploadChunk };
+
+const downloadChunk = (req, res) => {
+  const { uploadId, chunkIndex } = req.params;
+  
+  // Construct the path: src/data/uploadId/chunk-5
+  const chunkPath = path.resolve(config.STORAGE_PATH, uploadId, `chunk-${chunkIndex}`);
+
+  if (!fs.existsSync(chunkPath)) {
+    return res.status(404).json({ error: 'Chunk not found on this node' });
+  }
+
+  console.log(`[${config.NODE_ID}] Serving Chunk ${chunkIndex} to Coordinator`);
+  
+  res.sendFile(chunkPath);
+};
+
+module.exports = { uploadChunk, downloadChunk };

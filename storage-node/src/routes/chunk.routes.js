@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const fs = require('fs');
-const { uploadChunk } = require('../controllers/chunk.controller');
+const { uploadChunk, downloadChunk } = require('../controllers/chunk.controller');
 
 const router = express.Router();
 
@@ -13,6 +13,10 @@ if (!fs.existsSync(tempPath)) {
 
 const upload = multer({ dest: tempPath });
 
+// POST /chunks
 router.post('/', upload.single('chunk'), uploadChunk);
+
+// GET /chunks/:uploadId/:chunkIndex
+router.get('/:uploadId/:chunkIndex',downloadChunk);
 
 module.exports = router;

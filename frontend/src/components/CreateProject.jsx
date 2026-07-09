@@ -19,7 +19,7 @@ const CreateProject = () => {
     setLoading(true);
 
     try {
-      const DEV_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjUyNzg1NWQ1LTNkNWItNGJmOC05NzhjLTc3MTc2NjU3NDI4NiIsImlhdCI6MTc4Mjc5NTQ0MiwiZXhwIjoxNzgzNDAwMjQyfQ.uq0iCpo_rc_JvMUV5VayONKN1QD_jfFYjEzre7rP7ZI"; 
+      const DEV_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjUyNzg1NWQ1LTNkNWItNGJmOC05NzhjLTc3MTc2NjU3NDI4NiIsImlhdCI6MTc4MzUxODQzMCwiZXhwIjoxNzg0MTIzMjMwfQ.kKh8IEo3iKRxJ4jg7Rok0qa8YgKfdTUpx2dtRzOXjUk"; 
 
       await axios.post('http://localhost:5000/api/projects', formData, {
         headers: { Authorization: `Bearer ${DEV_TOKEN}` }
