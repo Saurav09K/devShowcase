@@ -41,4 +41,29 @@ const downloadChunk = (req, res) => {
   res.sendFile(chunkPath);
 };
 
-module.exports = { uploadChunk, downloadChunk };
+const deleteChunk = async (req, res) => {
+  const { uploadId, chunkIndex } = req.params;
+  
+  const chunkPath = path.resolve(config.STORAGE_PATH, uploadId, `chunk-${chunkIndex}`);
+  const dirPath = path.resolve(config.STORAGE_PATH, uploadId);
+
+  try {
+    if (fs.existsSync(chunkPath)) {
+      await fs.promises.unlink(chunkPath);
+      console.log(`[${config.NODE_ID}] Deleted Chunk ${chunkIndex} for ${uploadId}`);
+    }
+
+    try {
+      await fs.promises.rmdir(dirPath);
+      console.log(`[${config.NODE_ID}] Cleaned up empty folder for ${uploadId}`);
+    } catch (e) {
+    }
+
+    res.status(200).json({ deleted: true });
+  } catch (error) {
+    console.error(`[${config.NODE_ID}] Delete failed:`, error);
+    res.status(500).json({ error: 'Failed to delete chunk' });
+  }
+};
+
+module.exports = { uploadChunk, downloadChunk, deleteChunk };

@@ -19,4 +19,7 @@ router.post('/', upload.single('chunk'), uploadChunk);
 // GET /chunks/:uploadId/:chunkIndex
 router.get('/:uploadId/:chunkIndex',downloadChunk);
 
+// DELETE /chunks/:uploadId/:chunkIndex
+router.delete('/:uploadId/:chunkIndex', chunkController.deleteChunk);
+
 module.exports = router;

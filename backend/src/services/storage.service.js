@@ -108,6 +108,10 @@ const mergeChunks = async (uploadId, finalFilePath) => {
         response.data.on('error', reject);
       });
     } catch (err) {
+      writeStream.destroy();
+      await fs.promises.rm(finalFilePath,{
+        force:true
+      });
       throw new Error(`CRITICAL: Failed to download chunk ${chunk.chunkIndex} from ${targetNode.id}`);
     }
   }
@@ -119,6 +123,21 @@ const mergeChunks = async (uploadId, finalFilePath) => {
   });
 
   console.log(`[Merger] Downloaded and stitched ${session.totalChunks} chunks perfectly!`);
+
+  console.log(`Sending cleanup orders to storage nodes...`);
+  
+  for (const chunk of session.chunks) {
+    const targetNode = STORAGE_NODES.find(n => n.id === chunk.nodeId);
+    if (targetNode) {
+      const deleteUrl = `${targetNode.url}/chunks/${uploadId}/${chunk.chunkIndex}`;
+      try {
+        // Send the HTTP DELETE request
+        await axios.delete(deleteUrl);
+      } catch (err) {
+        console.warn(`Failed to tell ${targetNode.id} to delete chunk ${chunk.chunkIndex}`);
+      }
+    }
+  }
 
   await prisma.uploadSession.delete({
     where: { id: session.id }
