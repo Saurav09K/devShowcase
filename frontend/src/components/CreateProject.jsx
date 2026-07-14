@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { PlusCircle } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext'; 
 
 const CreateProject = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+
+  const { token } = useContext(AuthContext);
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -16,13 +20,18 @@ const CreateProject = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!token) {
+      alert("You must be logged in to create a project.");
+      navigate('/login');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const DEV_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjUyNzg1NWQ1LTNkNWItNGJmOC05NzhjLTc3MTc2NjU3NDI4NiIsImlhdCI6MTc4MzUxODQzMCwiZXhwIjoxNzg0MTIzMjMwfQ.kKh8IEo3iKRxJ4jg7Rok0qa8YgKfdTUpx2dtRzOXjUk"; 
-
       await axios.post('http://localhost:5000/api/projects', formData, {
-        headers: { Authorization: `Bearer ${DEV_TOKEN}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       
       navigate('/upload');

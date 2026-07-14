@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const fs = require('fs');
-const { uploadChunk, downloadChunk } = require('../controllers/chunk.controller');
+const { uploadChunk, downloadChunk, deleteChunk } = require('../controllers/chunk.controller');
 
 const router = express.Router();
 
@@ -20,6 +20,6 @@ router.post('/', upload.single('chunk'), uploadChunk);
 router.get('/:uploadId/:chunkIndex',downloadChunk);
 
 // DELETE /chunks/:uploadId/:chunkIndex
-router.delete('/:uploadId/:chunkIndex', chunkController.deleteChunk);
+router.delete('/:uploadId/:chunkIndex',deleteChunk);
 
 module.exports = router;

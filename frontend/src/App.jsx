@@ -1,9 +1,13 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import React, { useContext } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom'; // 🚀 Added Navigate
 import Dashboard from './components/Dashboard';
 import CreateProject from './components/CreateProject';
 import ChunkUploader from './components/ChunkUploader';
 import ProjectPage from './components/ProjectPage';
+
+import Login from './components/Login';
+import Register from './components/Register';
+import { AuthProvider, AuthContext } from './context/AuthContext'; 
 
 const Layout = ({ children, title }) => (
   <div className="min-h-screen p-8 flex flex-col items-center">
@@ -15,35 +19,61 @@ const Layout = ({ children, title }) => (
   </div>
 );
 
+
+const ProtectedRoute = ({ children }) => {
+  const { token } = useContext(AuthContext);
+  
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
+
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route 
-          path="/" 
-          element={
-            <div className="min-h-screen p-8">
-              <div className="flex justify-center mb-10">
-                <h1 className="text-3xl font-bold text-blue-400">DevShowcase</h1>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Public Dashboard */}
+          <Route 
+            path="/" 
+            element={
+              <div className="min-h-screen p-8">
+                <div className="flex justify-center mb-10">
+                  <h1 className="text-3xl font-bold text-blue-400">DevShowcase</h1>
+                </div>
+                <Dashboard />
               </div>
-              <Dashboard />
-            </div>
-          } 
-        />
+            } 
+          />
 
-        <Route 
-          path="/create" 
-          element={<Layout title="Create a New Project"><CreateProject /></Layout>} 
-        />
+          <Route 
+            path="/create" 
+            element={
+              <ProtectedRoute>
+                <Layout title="Create a New Project"><CreateProject /></Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-        <Route 
-          path="/upload" 
-          element={<Layout title="Distributed Upload System"><ChunkUploader /></Layout>} 
-        />
+          <Route 
+            path="/upload" 
+            element={
+              <ProtectedRoute>
+                <Layout title="Distributed Upload System"><ChunkUploader /></Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-        <Route path="/project/:id" element={<ProjectPage />} />
-      </Routes>
-    </Router>
+          {/* Public Project View */}
+          <Route path="/project/:id" element={<ProjectPage />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
