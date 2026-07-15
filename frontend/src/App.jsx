@@ -4,10 +4,10 @@ import Dashboard from './components/Dashboard';
 import CreateProject from './components/CreateProject';
 import ChunkUploader from './components/ChunkUploader';
 import ProjectPage from './components/ProjectPage';
-
 import Login from './components/Login';
 import Register from './components/Register';
 import { AuthProvider, AuthContext } from './context/AuthContext'; 
+import Navbar from './components/Navbar';
 
 const Layout = ({ children, title }) => (
   <div className="min-h-screen p-8 flex flex-col items-center">
@@ -34,6 +34,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <Navbar/>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
