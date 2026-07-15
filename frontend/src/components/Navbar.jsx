@@ -16,7 +16,7 @@ const Navbar = () => {
     <nav className="w-full bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
       {/* Brand Logo */}
       <Link to="/" className="text-2xl font-bold text-blue-400 hover:text-blue-300 transition">
-        DevShowcase
+       <img src="/logo.png" alt="DevShowcase"className="w-25 h-18"/>
       </Link>
 
       {/* Dynamic Auth Buttons */}

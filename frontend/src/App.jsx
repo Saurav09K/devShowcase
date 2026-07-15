@@ -45,7 +45,7 @@ function App() {
             element={
               <div className="min-h-screen p-8">
                 <div className="flex justify-center mb-10">
-                  <h1 className="text-3xl font-bold text-blue-400">DevShowcase</h1>
+                  {/* <h1 className="text-3xl font-bold text-blue-400">DevShowcase</h1> */}
                 </div>
                 <Dashboard />
               </div>
