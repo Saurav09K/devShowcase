@@ -1,10 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { Play, Pause, UploadCloud, CheckCircle } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 
 const CHUNK_SIZE = 5 * 1024 * 1024; 
 
 const ChunkUploader = () => {
+  const {token} = useContext(AuthContext);
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState('idle'); // idle, uploading, paused, complete, error
   const [progress, setProgress] = useState(0);
@@ -22,7 +24,9 @@ const ChunkUploader = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/projects');
+        const res = await axios.get('http://localhost:5000/api/projects',{
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setProjects(res.data);
         if (res.data.length > 0) {
           setSelectedProjectId(res.data[0].id); // Auto-select the first project
@@ -63,12 +67,16 @@ const ChunkUploader = () => {
         const initRes = await axios.post('http://localhost:5000/api/upload/init', {
           fileName: file.name,
           fileSize: file.size
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
         });
         currentUploadId = initRes.data.uploadId;
         setUploadId(currentUploadId);
       } else {
         // If we already have an ID, ask the server what it has
-        const statusRes = await axios.get(`http://localhost:5000/api/upload/status/${currentUploadId}`);
+        const statusRes = await axios.get(`http://localhost:5000/api/upload/status/${currentUploadId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         currentUploadedChunks = statusRes.data.uploadedChunks;
         setUploadedChunks(currentUploadedChunks);
       }
@@ -97,6 +105,7 @@ const ChunkUploader = () => {
         
 
         await axios.post('http://localhost:5000/api/upload/chunk', formData, {
+          headers: { Authorization: `Bearer ${token}` },
           signal: abortControllerRef.current.signal, // Allows us to cancel the HTTP request mid-flight
         });
 
@@ -120,6 +129,8 @@ const ChunkUploader = () => {
           mimeType: file.type,
           projectId: selectedProjectId,
           totalChunks: totalChunks
+        },{
+          headers: { Authorization: `Bearer ${token}` }
         });
 
         setStatus('complete');

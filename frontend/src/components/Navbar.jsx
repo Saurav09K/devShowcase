@@ -4,7 +4,7 @@ import { LogOut, User as UserIcon, LogIn } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 
 const Navbar = () => {
-  const { token, user, logout } = useContext(AuthContext); // 🚀 Pull state and logout function
+  const { token, user, logout } = useContext(AuthContext); 
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -28,6 +28,9 @@ const Navbar = () => {
               <UserIcon size={16} className="text-slate-400" />
               {user?.username || 'Hacker'}
             </span>
+            <Link to="/upload" className="flex items-center gap-2 text-slate-300 hover:text-white transition font-medium text-sm">
+              Update Video
+            </Link>
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-2 rounded-md transition text-sm font-medium border border-red-500/20"
