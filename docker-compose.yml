@@ -1,0 +1,69 @@
+
+services:
+  # (Main API)
+  main-api:
+    build: 
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    ports:
+      - "5000:5000"
+    depends_on:
+      - redis
+      - node-a
+      - node-b
+      - node-c
+
+  # (Redis for BullMQ)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # (Thumbnail Worker)
+  thumbnail-worker:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    command: node src/workers/thumbnail.worker.js
+    depends_on:
+      - redis
+
+  # Storage Node A
+  node-a:
+    build: 
+      context: ./storage-node
+    ports: 
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - NODE_ID=node-a
+      - STORAGE_PATH=./data/node-a
+
+  # Storage Node B
+  node-b:
+    build: 
+      context: ./storage-node
+    ports: 
+      - "5002:5002"
+    environment:
+      - PORT=5002
+      - NODE_ID=node-b
+      - STORAGE_PATH=./data/node-b
+
+  # Storage Node C
+  node-c:
+    build: 
+      context: ./storage-node
+    ports: 
+      - "5003:5003"
+    environment:
+      - PORT=5003
+      - NODE_ID=node-c
+      - STORAGE_PATH=./data/node-c
+
+volumes:
+  redis_data:
