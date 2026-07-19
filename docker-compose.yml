@@ -13,6 +13,9 @@ services:
       - node-a
       - node-b
       - node-c
+    volumes:
+      - uploads_data:/app/uploads
+      - thumbnails_data:/app/thumbnails
 
   # (Redis for BullMQ)
   redis:
@@ -31,6 +34,9 @@ services:
     command: node src/workers/thumbnail.worker.js
     depends_on:
       - redis
+    volumes:
+      - uploads_data:/app/uploads
+      - thumbnails_data:/app/thumbnails
 
   # Storage Node A
   node-a:
@@ -67,3 +73,5 @@ services:
 
 volumes:
   redis_data:
+  uploads_data:
+  thumbnails_data:
