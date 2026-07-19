@@ -7,9 +7,9 @@ const FormData = require('form-data');
 const prisma = new PrismaClient();
 
 const STORAGE_NODES = [
-  { id: 'node-a', url: 'http://localhost:5001' },
-  { id: 'node-b', url: 'http://localhost:5002' },
-  { id: 'node-c', url: 'http://localhost:5003' }
+  { id: 'node-a', url: process.env.NODE_A_URL },
+  { id: 'node-b', url: process.env.NODE_B_URL },
+  { id: 'node-c', url: process.env.NODE_C_URL }
 ];
 
 const selectStorageNode = (chunkIndex) => {
