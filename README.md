@@ -1,6 +1,25 @@
 # DevShowcase
 
-DevShowcase is a MERN-style portfolio platform for uploading and presenting developer projects with video demos. The project includes a React frontend, an Express/Prisma backend, and a separate distributed storage layer that accepts chunked uploads across multiple storage nodes.
+DevShowcase is a full-stack developer media platform that enables developers to showcase their software projects through high-quality demo videos. Instead of relying solely on GitHub repositories or screenshots, developers can create dedicated project pages containing descriptions, technology stacks, source code links, and shareable video demonstrations that recruiters, hiring managers, and other developers can view directly in their browser.
+
+The motivation behind DevShowcase comes from a common problem faced by developers during interviews and portfolio reviews. Many projects are difficult to evaluate by simply looking at the source code. Recruiters rarely have the time to clone repositories, configure environments, and run applications locally. A short, well-recorded demonstration video often communicates the project's functionality, user experience, and technical implementation much more effectively.
+
+To provide a reliable upload experience for large media files, DevShowcase implements a custom chunked upload pipeline. Videos are divided into smaller chunks, allowing uploads to resume after network interruptions instead of restarting from the beginning. This significantly improves the experience for developers uploading large project demonstrations.
+
+The backend is designed around a scalable service-oriented architecture. Rather than coupling media storage directly with the main API, DevShowcase separates responsibilities into dedicated components:
+
+* **API Coordinator** – Handles authentication, project management, upload orchestration, and metadata.
+* **Storage Services** – Independent storage service instances responsible for receiving and managing uploaded media chunks.
+* **Metadata Service** – Maintains upload sessions, chunk information, and project data using PostgreSQL.
+* **Background Worker** – Processes uploaded videos asynchronously to generate thumbnails and media metadata without blocking user requests.
+* **Redis & BullMQ** – Power the background job queue for asynchronous media processing.
+
+Although the portfolio deployment runs multiple storage-service instances on a single virtual machine to minimize infrastructure costs, the architecture is intentionally designed for horizontal scalability. Since storage services communicate independently over HTTP, they can later be deployed across multiple virtual machines without requiring changes to the application logic. This separation of concerns keeps the upload pipeline modular and allows the platform to evolve as traffic grows.
+
+The project also implements HTTP Range-based video streaming, allowing users to watch uploaded demonstrations efficiently without downloading the entire video. Combined with asynchronous processing, resumable uploads, and dedicated storage services, DevShowcase demonstrates how modern media platforms handle large-file ingestion and delivery while maintaining a responsive user experience.
+
+Rather than being a distributed storage system, DevShowcase is a real-world product that applies distributed systems principles where they provide practical value. The project focuses on solving a genuine developer problem while showcasing scalable backend architecture, asynchronous processing, media streaming, and large-file upload techniques commonly used in modern production systems.
+
 
 ## What It Does
 
